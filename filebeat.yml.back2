@@ -1,0 +1,37 @@
+filebeat.autodiscover:
+  providers:
+    - type: docker
+      hints.enabled: true  # Включаем подсказки для обнаружения Docker-контейнеров
+
+# Определяем общие настройки для всех контейнеров
+filebeat.inputs:
+  - type: filestream
+    id: system-logs
+    paths:
+      - /var/log/*.log
+    fields:
+      log_type: system  # Добавьте пользовательское поле для идентификации
+    fields_under_root: true  # Поместите пользовательские поля на корень документа
+
+processors:
+  - add_docker_metadata: ~  # Добавляем метаданные Docker
+
+setup.kibana:
+  host: ${KIBANA_HOSTS}
+  username: ${ELASTIC_USER}
+  password: ${ELASTIC_PASSWORD}
+
+output.elasticsearch:
+  hosts: ${ELASTIC_HOSTS}
+  username: ${ELASTIC_USER}
+  password: ${ELASTIC_PASSWORD}
+  ssl.enabled: true
+  ssl.certificate_authorities: "certs/ca/ca.crt"
+
+# Настройка индексов для разных типов логов
+indices:
+  - index: "system-logs-%{+yyyy.MM.dd}"  # Индекс для системных логов
+    when:
+      contains:
+        log_type: "system"  # Условие для системных логов
+
